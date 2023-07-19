@@ -1,5 +1,4 @@
 from django import forms
-from django.core.mail import send_mail
 from django.contrib.auth import get_user_model
 
 from blog.models import Post, Comment
