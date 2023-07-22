@@ -102,7 +102,7 @@ class Post(PublishedModel):
 
 
 class Comment(models.Model):
-    add_comment = models.TextField('Текст комментария')
+    text = models.TextField('Текст комментария')
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
@@ -116,4 +116,4 @@ class Comment(models.Model):
         verbose_name_plural = 'Комментарии'
 
     def __str__(self):
-        return self.add_comment
+        return self.text[:15]

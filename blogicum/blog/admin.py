@@ -29,7 +29,6 @@ class LocationAdmin(admin.ModelAdmin):
 class PostAdmin(admin.ModelAdmin):
     list_display = (
         'title',
-        'text',
         'pub_date',
         'author',
         'location',

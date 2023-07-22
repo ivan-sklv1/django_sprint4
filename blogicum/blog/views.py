@@ -5,11 +5,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth import get_user_model
 from django.urls import reverse_lazy, reverse
-from django.db.models.functions import Now
-import datetime as dt
+from django.utils import timezone
 
 from django.conf import settings
 from blog.models import Category, Post, Comment
+
 from blog.forms import PostForm, CommentForm, UserUpdateForm
 
 
@@ -21,7 +21,7 @@ class PostListView(ListView):
     queryset = Post.objects.filter(
         is_published=True,
         category__is_published=True,
-        pub_date__lte=dt.datetime.now(tz=dt.timezone(dt.timedelta())),
+        pub_date__lte=timezone.now(),
     )
     ordering = ('-pub_date')
     paginate_by = settings.POSTS_PER_PAGE
@@ -33,6 +33,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     form_class = PostForm
     template_name = 'blog/create.html'
     ordering = ('-pub_date')
+    context = {'is_create': True}
 
     def form_valid(self, form):
         form.instance.author = self.request.user
@@ -55,7 +56,7 @@ class PostDetailView(DetailView):
                 Post,
                 is_published=True,
                 category__is_published=True,
-                id=self.kwargs['post_id'],
+                id=self.kwargs.get('post_id'),
             )
         return object
 
@@ -75,19 +76,24 @@ class PostUpdateView(UpdateView):
     pk_url_kwarg = 'post_id'
 
     def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(Post, id=self.kwargs['post_id'])
+        instance = get_object_or_404(Post, id=self.kwargs.get('post_id'))
         if instance.author != request.user:
             return redirect(
                 reverse_lazy(
                     'blog:post_detail',
-                    kwargs={'post_id': self.kwargs['post_id']},
+                    kwargs={'post_id': self.kwargs.get('post_id')},
                 ),
             )
         return super().dispatch(request, *args, **kwargs)
 
+    def get_context_data(self, *args, **kwargs):
+        context = super(PostUpdateView, self).get_context_data(**kwargs)
+        context['post_edit'] = True
+        return context
+
     def form_valid(self, form):
         self.object = form.save()
-        return redirect('blog:post_detail', self.kwargs['post_id'])
+        return redirect('blog:post_detail', self.kwargs.get('post_id'))
 
 
 class PostDeleteView(LoginRequiredMixin, DeleteView):
@@ -98,15 +104,20 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy('blog:index')
 
     def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(Post, id=self.kwargs['post_id'])
+        instance = get_object_or_404(Post, id=self.kwargs.get('post_id'))
         if instance.author != request.user:
             return redirect(
                 reverse_lazy(
                     'blog:post_detail',
-                    kwargs={'post_id': self.kwargs['post_id']},
+                    kwargs={'post_id': self.kwargs.get('post_id')},
                 ),
             )
         return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, *args, **kwargs):
+        context = super(PostDeleteView, self).get_context_data(**kwargs)
+        context['post_delete'] = True
+        return context
 
 
 class CategoryListView(LoginRequiredMixin, ListView):
@@ -125,7 +136,7 @@ class CategoryListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Post.objects.filter(
-            pub_date__lte=Now(),
+            pub_date__lte=timezone.now(),
             category__slug=self.kwargs['category_slug'],
             is_published=True,
         )
@@ -169,14 +180,14 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         form.instance.author = self.request.user
         form.instance.post = get_object_or_404(
             Post,
-            id=self.kwargs['post_id']
+            id=self.kwargs.get('post_id')
         )
         return super().form_valid(form)
 
     def get_success_url(self):
         return reverse(
             'blog:post_detail',
-            kwargs={'post_id': self.kwargs['post_id']}
+            kwargs={'post_id': self.kwargs.get('post_id')}
         )
 
 
@@ -196,7 +207,7 @@ class CommentUpdateView(LoginRequiredMixin, UpdateView):
             return redirect(
                 reverse_lazy(
                     'blog:post_detail',
-                    kwargs={'post_id': self.kwargs['post_id']},
+                    kwargs={'post_id': self.kwargs.get('post_id')},
                 ),
             )
         return super().dispatch(request, *args, **kwargs)
@@ -205,14 +216,19 @@ class CommentUpdateView(LoginRequiredMixin, UpdateView):
         form.instance.author = self.request.user
         form.instance.post = get_object_or_404(
             Post,
-            id=self.kwargs['post_id']
+            id=self.kwargs.get('post_id')
         )
         return super().form_valid(form)
+
+    def get_context_data(self, *args, **kwargs):
+        context = super(CommentUpdateView, self).get_context_data(**kwargs)
+        context['comment_edit'] = True
+        return context
 
     def get_success_url(self):
         return reverse(
             'blog:post_detail',
-            kwargs={'post_id': self.kwargs['post_id']}
+            kwargs={'post_id': self.kwargs.get('post_id')}
         )
 
 
@@ -231,13 +247,18 @@ class CommentDeleteView(LoginRequiredMixin, DeleteView):
             return redirect(
                 reverse_lazy(
                     'blog:post_detail',
-                    kwargs={'post_id': self.kwargs['post_id']},
+                    kwargs={'post_id': self.kwargs.get('post_id')},
                 ),
             )
         return super().dispatch(request, *args, **kwargs)
 
+    def get_context_data(self, *args, **kwargs):
+        context = super(CommentDeleteView, self).get_context_data(**kwargs)
+        context['comment_delete'] = True
+        return context
+
     def get_success_url(self):
         return reverse(
             'blog:post_detail',
-            kwargs={'post_id': self.kwargs['post_id']}
+            kwargs={'post_id': self.kwargs.get('post_id')}
         )
