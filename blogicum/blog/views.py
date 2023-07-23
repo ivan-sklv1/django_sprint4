@@ -155,7 +155,9 @@ class ProfileListView(ListView):
     paginate_by = settings.POSTS_PER_PAGE
 
     def get_queryset(self):
-        self.user = get_object_or_404(User, username=self.kwargs['username'])
+        self.user = get_object_or_404(
+            User, username=self.kwargs.get('username')
+        )
         return Post.objects.select_related(
             'author'
         ).filter(author=self.user)
@@ -209,7 +211,7 @@ class CommentUpdateView(LoginRequiredMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         instance = get_object_or_404(
             Comment,
-            id=self.kwargs['comment_id'],
+            id=self.kwargs.get('comment_id'),
             post__id=kwargs['post_id'],
         )
         if instance.author != request.user:
@@ -249,7 +251,7 @@ class CommentDeleteView(LoginRequiredMixin, DeleteView):
     def dispatch(self, request, *args, **kwargs):
         instance = get_object_or_404(
             Comment,
-            id=self.kwargs['comment_id'],
+            id=self.kwargs.get('comment_id'),
             post__id=kwargs['post_id'],
         )
         if instance.author != request.user:
