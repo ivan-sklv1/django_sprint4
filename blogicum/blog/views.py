@@ -129,15 +129,22 @@ class CategoryListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['category'] = get_object_or_404(
             Category,
-            slug=self.kwargs['category_slug'],
+            slug=self.kwargs.get('category_slug'),
             is_published=True,
         )
         return context
 
     def get_queryset(self):
-        return Post.objects.filter(
+        self.category = get_object_or_404(
+            Category,
+            slug=self.kwargs.get('category_slug'),
+            is_published=True
+        )
+        return Post.objects.select_related(
+            'category'
+        ).filter(
             pub_date__lte=timezone.now(),
-            category__slug=self.kwargs['category_slug'],
+            category=self.category,
             is_published=True,
         )
 
@@ -149,7 +156,9 @@ class ProfileListView(ListView):
 
     def get_queryset(self):
         self.user = get_object_or_404(User, username=self.kwargs['username'])
-        return Post.objects.filter(author=self.user)
+        return Post.objects.select_related(
+            'author'
+        ).filter(author=self.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
