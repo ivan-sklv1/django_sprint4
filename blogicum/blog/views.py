@@ -121,7 +121,7 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
 
 
 class CategoryListView(LoginRequiredMixin, ListView):
-    model = Category
+    model = Post
     paginate_by = settings.POSTS_PER_PAGE
     template_name = 'blog/category.html'
 
@@ -140,11 +140,8 @@ class CategoryListView(LoginRequiredMixin, ListView):
             slug=self.kwargs.get('category_slug'),
             is_published=True
         )
-        return Post.objects.select_related(
-            'category'
-        ).filter(
+        return self.category.posts.filter(
             pub_date__lte=timezone.now(),
-            category=self.category,
             is_published=True,
         )
 
@@ -158,9 +155,7 @@ class ProfileListView(ListView):
         self.user = get_object_or_404(
             User, username=self.kwargs.get('username')
         )
-        return Post.objects.select_related(
-            'author'
-        ).filter(author=self.user)
+        return self.user.posts.all()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
