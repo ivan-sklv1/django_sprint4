@@ -135,12 +135,12 @@ class CategoryListView(LoginRequiredMixin, ListView):
         return context
 
     def get_queryset(self):
-        self.category = get_object_or_404(
+        category = get_object_or_404(
             Category,
             slug=self.kwargs.get('category_slug'),
             is_published=True
         )
-        return self.category.posts.filter(
+        return category.posts.filter(
             pub_date__lte=timezone.now(),
             is_published=True,
         )
@@ -151,16 +151,20 @@ class ProfileListView(ListView):
     template_name = 'blog/profile.html'
     paginate_by = settings.POSTS_PER_PAGE
 
-    def get_queryset(self):
-        self.user = get_object_or_404(
-            User, username=self.kwargs.get('username')
-        )
-        return self.user.posts.all()
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['profile'] = self.user
+        context['profile'] = get_object_or_404(
+            User,
+            username=self.kwargs.get('username')
+        )
         return context
+
+    def get_queryset(self):
+        user = get_object_or_404(
+            User,
+            username=self.kwargs.get('username')
+        )
+        return user.posts.all()
 
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
